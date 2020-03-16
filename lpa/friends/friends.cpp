@@ -20,23 +20,24 @@ public:
     Graph(int V); // Constructor
 
     void addEdge(int v, int w);
-    int connectedComponents();
+    int DFS();
 
-    void showTheConnectedComponents();
+    void largestGroup();
     void printGraph();
 };
 
 // Method to print connected components in an
 // undirected graph and return the numbers of
 // components connecteds
-int Graph::connectedComponents()
+int Graph::DFS()
 {
     // Mark all the vertices as not visited
     bool *visited = new bool[V];
+
     for (int v = 0; v < V; v++)
         visited[v] = false;
 
-    int numberOfFriends = -1;
+    int numberOfFriends = 0;
     int newNumberOfFriends = 0;
 
     for (int v = 0; v < V; v++)
@@ -45,12 +46,10 @@ int Graph::connectedComponents()
         {
             // print all reachable vertices
             // from v
-            newNumberOfFriends = DFSUtil(v, visited, numberOfFriends);
+            newNumberOfFriends = DFSUtil(v, visited, 0);
 
             if (newNumberOfFriends > numberOfFriends)
                 numberOfFriends = newNumberOfFriends;
-
-            cout << "\n";
         }
     }
 
@@ -61,18 +60,19 @@ int Graph::DFSUtil(int v, bool visited[], int numberOfFriends)
 {
     // Mark the current node as visited and print it
     visited[v] = true;
+    numberOfFriends++;
 
     // Recur for all the vertices
     // adjacent to this vertex
     list<int>::iterator i;
 
     for (i = adj[v].begin(); i != adj[v].end(); i++)
+    {
         if (!visited[*i])
         {
-            numberOfFriends++;
-            cout << "numberOfFriends: " << numberOfFriends << endl;
             numberOfFriends = DFSUtil(*i, visited, numberOfFriends);
         }
+    }
 
     return numberOfFriends;
 }
@@ -90,11 +90,11 @@ void Graph::addEdge(int v, int w)
     adj[w - 1].push_back(v - 1); // Add w to v’s list.
 }
 
-void Graph::showTheConnectedComponents()
+void Graph::largestGroup()
 {
-    int connectedCompents = connectedComponents();
+    int numberOfFriends = DFS();
 
-    cout << connectedCompents << " connected components\n\n";
+    cout << numberOfFriends << endl;
 }
 
 void Graph::printGraph()
@@ -141,8 +141,8 @@ int main()
 
             g.addEdge(friend1, friend2);
         }
-        g.printGraph();
-        g.showTheConnectedComponents();
+
+        g.largestGroup();
     }
 
     return 0;
