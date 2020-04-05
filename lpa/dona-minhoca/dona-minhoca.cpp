@@ -60,7 +60,7 @@ int Cycle::getCycleSize()
     return size;
 }
 
-bool hasInCycle(Cycle *cycle, int vertex);
+bool hasInCycle(Cycle cycle, int vertex);
 
 void printCycle(list<Node> cycle)
 {
@@ -79,7 +79,7 @@ class Graph
 {
 public:
     int **graph;
-    list<Cycle *> cycles;
+    list<Cycle> cycles;
     bool *hasIsCycle;
     bool hasCycle;
 
@@ -91,8 +91,8 @@ public:
 
     void createLigation(int x, int y, int weight);
     int findShortestCycle(int beginOfJourney, int weightOfWorm);
-    void addCycle(Cycle *cycle);
-    Cycle *findShortestCycle(int weightOfWorm);
+    void addCycle(Cycle cycle);
+    Cycle findShortestCycle(int weightOfWorm);
 
     int **floydWarshall();
     int **makeInputMatrix();
@@ -102,7 +102,7 @@ public:
     void print();
 
 private:
-    int findCycle(int src, bool *visited, int parent, Cycle *cycle, int initialVertex);
+    int findCycle(int src, bool *visited, int parent, Cycle cycle, int initialVertex);
 };
 
 Graph::Graph(int numberOfVertex)
@@ -124,12 +124,12 @@ void Graph::initializeGraph()
 
         for (int j = 0; j < V; j++)
         {
-            graph[i][j] = INT_MAX;
+            graph[i][j] = 1500000;
         }
     }
 }
 
-void Graph::addCycle(Cycle *cycle)
+void Graph::addCycle(Cycle cycle)
 {
     cycles.push_back(cycle);
 }
@@ -175,29 +175,24 @@ bool *cleanVisited(bool *visited, int V)
     return visited;
 }
 
-Cycle *Graph::findShortestCycle(int weightOfWorm)
+Cycle Graph::findShortestCycle(int weightOfWorm)
 {
-    int shortestWeight = INT_MAX;
-    list<Cycle *>::iterator it;
-    Cycle *cycle;
-    Node node(-1, -1, -1);
+    int shortestWeight = 1500000;
+    list<Cycle>::iterator it;
+    Cycle cycle;
+
+    int weight = 0;
     for (it = cycles.begin(); it != cycles.end(); it++)
     {
-        list<Node>::iterator itN;
-        int weight = 0;
-        //get the weight of cycle
-        for (itN = cycles.front()->vertexs.begin(); itN != cycles.front()->vertexs.end(); itN++)
-        {
-            weight += itN->weight;
-        }
+        weight = it->weightOfCycle;
 
         if (weight < shortestWeight && weight >= weightOfWorm)
         {
-            shortestWeight = weight;
             cycle = *it;
+            shortestWeight = weight;
 
-            cycle->weightOfCycle = shortestWeight;
-            cycle->startOfCycle = cycles.front()->startOfCycle;
+            cycle.weightOfCycle = shortestWeight;
+            cycle.startOfCycle = it->startOfCycle;
         }
     }
 
@@ -211,50 +206,44 @@ int Graph::findShortestCycle(int beginOfJourney, int weightOfWorm)
     for (int i = 0; i < V; i++)
     {
         visited = cleanVisited(visited, V);
-        Cycle *cycle = new Cycle();
-        cout << "\ncycle: " << i << endl;
-        findCycle(i, visited, -1, cycle, i);
+        findCycle(i, visited, -1, Cycle(), i);
     }
 
     if (!this->hasCycle)
-        cout << "result -1" << endl;
+        cout << "-1" << endl;
     else
     {
-        Cycle *shortestCycle = findShortestCycle(weightOfWorm);
-        if (shortestCycle->weightOfCycle != -1)
+        Cycle shortestCycle = findShortestCycle(weightOfWorm);
+        if (shortestCycle.weightOfCycle != -1)
         {
             int **outputMatrix = floydWarshall();
 
-            cout << "TAMANHO DO CICLO: " << shortestCycle->weightOfCycle << endl;
-            //cout << "inicio do ciclo" << cycles.front()->vertexs.front().initial;
-            int startOfCycle = shortestCycle->startOfCycle;
-            cout << "INICIO DO CICLO: " << startOfCycle << endl;
-            int distance = shortestCycle->weightOfCycle;
-            if (hasInCycle(shortestCycle, beginOfJourney))
+            int startOfCycle = shortestCycle.startOfCycle;
+
+            int distance = shortestCycle.weightOfCycle;
+            if (!hasInCycle(shortestCycle, beginOfJourney))
             {
-                cout << "ESTA NO CICLO: " << beginOfJourney << endl;
+
                 distance += outputMatrix[beginOfJourney][startOfCycle] + outputMatrix[startOfCycle][beginOfJourney];
             }
 
-            //cout << "floydMarshall";
-            //printMatrix(outputMatrix, V);
-            cout << "total: " << distance << endl;
+            cout << "" << distance << endl;
         }
         else
         {
-            cout << "result -1" << endl;
+            cout << "-1" << endl;
         }
     }
 }
 
-bool hasInCycle(Cycle *cycle, int vertex)
+bool hasInCycle(Cycle cycle, int vertex)
 {
     bool exists = false;
 
     list<Node>::iterator it;
-    for (it = cycle->vertexs.begin(); it != cycle->vertexs.end() && !exists; it++)
+    for (it = cycle.vertexs.begin(); it != cycle.vertexs.end() && !exists; it++)
     {
-        if (it->end == vertex || it->initial == vertex)
+        if (it->initial == vertex)
             exists = true;
     }
     return exists;
@@ -272,54 +261,39 @@ void printMatrix(int **matrix, int V)
     }
 }
 
-int Graph::findCycle(int src, bool *visited, int parent, Cycle *cycle, int initialVertex)
+int Graph::findCycle(int src, bool *visited, int parent, Cycle cycle, int initialVertex)
 {
     visited[src] = true;
 
     for (int j = 0; j < V; j++)
     {
-        if (graph[src][j] != INT_MAX) //have edge
+        if (graph[src][j] != 1500000) //have edge
         {
             if (!visited[j] && !hasIsCycle[j])
             {
-                cout << "weight: " << graph[src][j];
-                //sizeOfCycle += it->weight;
-                cycle->addVertex(Node(src, j, graph[src][j]));
+
+                cycle.addVertex(Node(src, j, graph[src][j]));
 
                 int foundCycle = findCycle(j, visited, src, cycle, initialVertex);
-                cycle = new Cycle();
-                if (foundCycle == 0)
-                {
-                    // cout << "FOUND CYCLE: " << endl;
-                    //sizeOfCycle = 0;
-                    //    cout << "ops " << endl;
-
-                    //cout << "sizeOfCycle: " << sizeOfCycle << endl;
-                }
+                cycle = Cycle();
             }
             else if (j != parent && j == initialVertex)
             {
-                cout << "weight: " << graph[src][j];
-                cout << "ACHOU CICLO" << endl;
                 this->hasCycle = true;
-                // cout << "src: " << src << " j: " << j << endl;
-                //verify if this cicle is bigger
-                //sizeOfCycle += it->weight;
-                cycle->addVertex(Node(src, j, graph[src][j]));
-                cout << "TAMANHO DESSA DISGRETA " << cycle->getCycleSize() << endl;
-                printCycle(cycle->vertexs);
-                addInCycle(cycle->vertexs);
-                //cout << "WEIGHT: " << graph[src][j];
-                //cout << "cycle found: " << j << endl;
-                //cout << "size: " << sizeOfCycle << endl;
-                cycle->startOfCycle = j;
+
+                cycle.addVertex(Node(src, j, graph[src][j]));
+
+                cycle.weightOfCycle = cycle.getCycleSize();
+
+                addInCycle(cycle.vertexs);
+
+                cycle.startOfCycle = j;
                 this->cycles.push_back(cycle);
 
                 return 0;
             }
         }
     }
-    //0 -> 1, 2, 3
 
     return -1;
 }
@@ -336,7 +310,7 @@ int **Graph::makeInputMatrix()
         {
             if (i == j)
                 inputMatrix[i][j] = 0;
-            else if (graph[i][j] != INT_MAX)
+            else if (graph[i][j] != 1500000)
                 inputMatrix[i][j] = graph[i][j];
             else
             {
@@ -350,8 +324,6 @@ int **Graph::makeInputMatrix()
 
 int **Graph::makeOutputMatrix(int **inputMatrix)
 {
-    //cout << "before1" << endl;
-    //printMatrix(inputMatrix, V);
     for (int i = 0; i < V; i++)
     {
         for (int j = 0; j < V; j++)
@@ -362,21 +334,14 @@ int **Graph::makeOutputMatrix(int **inputMatrix)
             }
         }
     }
-    // cout << "before" << endl;
-    //printMatrix(inputMatrix, V);
     return inputMatrix;
 }
 
 int **Graph::floydWarshall()
 {
-    //cout << "inputMatrix" << endl;
     int **inputMatrix = makeInputMatrix();
-    //printMatrix(inputMatrix, V);
 
     int **outputMatrix = makeOutputMatrix(inputMatrix);
-
-    //cout << "outputMatrix" << endl;
-    //printMatrix(outputMatrix, V);
 
     return outputMatrix;
 }
@@ -399,7 +364,6 @@ int main()
 
             graph.createLigation(initialSallon, finalSallon, weightOfTunnel);
         }
-        graph.print();
 
         cin >> attempts;
 
@@ -407,7 +371,7 @@ int main()
         {
             cin >> beginOfJourney;
             cin >> weightOfWorm;
-            cout << "begin of journey: " << beginOfJourney - 1 << endl;
+
             graph.findShortestCycle(beginOfJourney - 1, weightOfWorm);
         }
     }
